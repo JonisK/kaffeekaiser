@@ -24,34 +24,49 @@ def make_main_file(single_sheets, data):
 
 
 def make_single_sheet(group, users, data):
+    offsets = calc_offsets(users, data["rows"], data["whitespace"], data["rowHeight"])
     context = {}
     context["title"] = group
     context["datestamp"] = date.today().isoformat()
     context["creator_id"] = data["creator_id"]
     context["quote"] = random.choice(data["quotes"])
-
     context["contents"] = ", ".join((
-        create_tikz_contents(data["offset"] - i*(data["whitespace"]+data["rowHeight"]*data["rows"]), u)
+        create_tikz_contents(data["offset"] - offsets[i], u, data["rows"], data["columns"], data["rowHeight"])
         for i, u in enumerate(users)
         ))
     context["whitespace"] = data["whitespace"]
-    context["rows"] = data["rows"]
     context["rowHeight"] = data["rowHeight"]
     context["cellWidth"] = data["cellWidth"]
-    context["yMin"] = - 0.5 * data["rowHeight"] * data["rows"]
-    context["ticks"] = 2 * data["rows"]
-    context["size"] = data["rows"] * data["columns"]
     return Template(data["single_sheet_template"]).substitute(context)
 
+def calc_offsets(users, default_rows, whitespace, row_height):
+    offsets = []
+    offset = 0
+    for i, u in enumerate(users):
+        cur_offset = whitespace + row_height * (u["rows"] if "rows" in u else default_rows)
+        offset += cur_offset
+        offsets.append(offset)
+    return offsets
 
-def create_tikz_contents(y_pos, user_spec):
+def create_tikz_contents(y_pos, user_spec, default_rows, columns, row_height):
     position = "{:f} cm".format(y_pos)
     first_line = user_spec["first_name"]
     if "supervisor" in user_spec:
         second_line = "({:s})".format(user_spec["supervisor"])
     else:
         second_line = user_spec["last_name"]
-    return "/".join((position, first_line, second_line))
+
+    if "rows" in user_spec:
+        rows = user_spec["rows"]
+    else:
+        rows = default_rows
+
+    row_count = str(rows)
+    ticks = str(2 * rows)
+    size = str(rows * columns)
+    y_min = str(- rows * 0.5 * row_height)
+
+    return "/".join((position, first_line, second_line, row_count, ticks, size, y_min))
 
 
 def create_tally_sheets(filename):
