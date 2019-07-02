@@ -31,19 +31,26 @@ def make_single_sheet(group, users, data):
     context["quote"] = random.choice(data["quotes"])
 
     context["contents"] = ", ".join((
-        create_tikz_contents(data["offset"] + i*data["increment"], u)
+        create_tikz_contents(data["offset"] - i*(data["whitespace"]+data["rowHeight"]*data["rows"]), u)
         for i, u in enumerate(users)
         ))
+    context["whitespace"] = data["whitespace"]
+    context["rows"] = data["rows"]
+    context["rowHeight"] = data["rowHeight"]
+    context["cellWidth"] = data["cellWidth"]
+    context["yMin"] = - 0.5 * data["rowHeight"] * data["rows"]
+    context["ticks"] = 2 * data["rows"]
+    context["size"] = data["rows"] * data["columns"]
     return Template(data["single_sheet_template"]).substitute(context)
 
 
 def create_tikz_contents(y_pos, user_spec):
     position = "{:f} cm".format(y_pos)
-    first_line = user_spec["last_name"]
+    first_line = user_spec["first_name"]
     if "supervisor" in user_spec:
         second_line = "({:s})".format(user_spec["supervisor"])
     else:
-        second_line = user_spec["first_name"]
+        second_line = user_spec["last_name"]
     return "/".join((position, first_line, second_line))
 
 
